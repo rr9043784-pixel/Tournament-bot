@@ -17,84 +17,89 @@ def unb_headers():
     }
 
 
-@app.get("/")
+@app.route("/", methods=["GET"])
 def home():
     return "Tournament Bot API is online", 200
 
 
-@app.get("/health")
+@app.route("/health", methods=["GET"])
 def health():
-    return "OK", 200
+    return jsonify({"status": "ok"}), 200
 
 
-@app.get("/tags/<user_id>")
+@app.route("/tags/<user_id>", methods=["GET"])
 def get_tags(user_id):
     if not UNB_TOKEN or not GUILD_ID:
         return jsonify({
             "error": "UNB_TOKEN or UNB_GUILD_ID is not configured"
         }), 500
 
-    items_response = requests.get(
-        f"{API_BASE}/guilds/{GUILD_ID}/items",
-        headers=unb_headers(),
-        params={
-            "query": "[TAG]",
-            "limit": 100
-        },
-        timeout=15
-    )
-
-    if items_response.status_code != 200:
-        return jsonify({
-            "error": "Failed to get store items",
-            "status": items_response.status_code
-        }), 502
-
-    items_data = items_response.json()
-
-    if isinstance(items_data, dict):
-        items = items_data.get("items", [])
-    else:
-        items = items_data
-
-    result = []
-
-    for item in items:
-        name = str(item.get("name", ""))
-
-        if not name.startswith("[TAG]"):
-            continue
-
-        item_id = item.get("id")
-
-        if not item_id:
-            continue
-
-        inventory_response = requests.get(
-            f"{API_BASE}/guilds/{GUILD_ID}/users/{user_id}/inventory/{item_id}",
+    try:
+        response = requests.get(
+            f"{API_BASE}/guilds/{GUILD_ID}/items",
             headers=unb_headers(),
+            params={"query": "[TAG]", "limit": 100},
             timeout=15
         )
 
-        if inventory_response.status_code == 200:
-            tag_name = name[len("[TAG]"):].strip()
+        if response.status_code != 200:
+            return jsonify({
+                "error": "Failed to get store items",
+                "status": response.status_code
+            }), 502
 
-            result.append({
-                "name": tag_name,
-                "item_id": str(item_id),
-                "owned": True
-            })
+        data = response.json()
 
-    return jsonify({
-        "user_id": str(user_id),
-        "tags": result
-    })
+        if isinstance(data, dict):
+            items = data.get("items", [])
+        else:
+            items = data
+
+        result = []
+
+        for item in items:
+            name = str(item.get("name", ""))
+
+            if not name.startswith("[TAG]"):
+                continue
+
+            item_id = item.get("id")
+
+            if not item_id:
+                continue
+
+            inventory = requests.get(
+                f"{API_BASE}/guilds/{GUILD_ID}/users/{user_id}/inventory/{item_id}",
+                headers=unb_headers(),
+                timeout=15
+            )
+
+            if inventory.status_code == 200:
+                result.append({
+                    "name": name[len("[TAG]"):].strip(),
+                    "item_id": str(item_id),
+                    "owned": True
+                })
+
+        return jsonify({
+            "user_id": str(user_id),
+            "tags": result
+        })
+
+    except requests.RequestException as e:
+        return jsonify({
+            "error": "UnbelievaBoat API request failed",
+            "details": str(e)
+        }), 502
 
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", "10000"))
-    print(f"Starting Flask on 0.0.0.0:{port}", flush=True)
+
+    print(f"Starting Tournament Bot API on port {port}", flush=True)
+
     app.run(
         host="0.0.0.0",
-        port=port
-    )
+        port=port,
+        debug=False
+        )
