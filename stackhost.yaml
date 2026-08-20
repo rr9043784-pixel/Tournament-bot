@@ -1,10 +1,23 @@
-version: "1"
+# StackHost configuration file
+# Version: 2.0.0
+
+user:
+  name: rr9043784-pixel
+  github: rr9043784-pixel
 
 runtime:
   image: python:3.11-slim
 
-build:
-  command: pip install -r requirements.txt
+commands:
+  package: ""
+  build:
+    - pip install -r requirements.txt
+  start: gunicorn main:app
 
-start:
-  command: gunicorn main:app
+repository:
+  branch: main
+  auto_deploy: true
+
+env:
+  - UNB_TOKEN
+  - UNB_GUILD_ID
