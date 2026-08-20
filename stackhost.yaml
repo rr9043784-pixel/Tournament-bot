@@ -1,0 +1,11 @@
+version: "1"
+
+build:
+  command: pip install -r requirements.txt
+
+start:
+  command: gunicorn main:app
+
+env:
+  - UNB_TOKEN
+  - UNB_GUILD_ID
