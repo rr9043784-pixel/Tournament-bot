@@ -1,15 +1,10 @@
 version: "1"
 
 runtime:
-  language: python
-  version: "3.11"
+  image: python:3.11-slim
 
 build:
   command: pip install -r requirements.txt
 
 start:
   command: gunicorn main:app
-
-env:
-  - UNB_TOKEN
-  - UNB_GUILD_ID
