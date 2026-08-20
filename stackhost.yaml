@@ -12,7 +12,7 @@ commands:
   package: ""
   build:
     - pip install -r requirements.txt
-  start: gunicorn main:app
+  start: python3 main.py
 
 repository:
   branch: main
