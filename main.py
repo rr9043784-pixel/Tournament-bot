@@ -1,7 +1,6 @@
-
 import os
 import requests
-from flask import Flask, request, jsonify
+from flask import Flask, jsonify
 
 app = Flask(__name__)
 
@@ -13,14 +12,19 @@ API_BASE = "https://unbelievaboat.com/api/v1"
 
 def unb_headers():
     return {
-        "Authorization": UNB_TOKEN,
+        "Authorization": UNB_TOKEN or "",
         "Content-Type": "application/json",
     }
 
 
 @app.get("/")
 def home():
-    return "Tournament Bot API is online"
+    return "Tournament Bot API is online", 200
+
+
+@app.get("/health")
+def health():
+    return "OK", 200
 
 
 @app.get("/tags/<user_id>")
@@ -30,7 +34,6 @@ def get_tags(user_id):
             "error": "UNB_TOKEN or UNB_GUILD_ID is not configured"
         }), 500
 
-    # Получаем предметы магазина с названием [TAG]
     items_response = requests.get(
         f"{API_BASE}/guilds/{GUILD_ID}/items",
         headers=unb_headers(),
@@ -67,16 +70,13 @@ def get_tags(user_id):
         if not item_id:
             continue
 
-        # Проверяем наличие предмета у пользователя
         inventory_response = requests.get(
             f"{API_BASE}/guilds/{GUILD_ID}/users/{user_id}/inventory/{item_id}",
             headers=unb_headers(),
             timeout=15
         )
 
-        owned = inventory_response.status_code == 200
-
-        if owned:
+        if inventory_response.status_code == 200:
             tag_name = name[len("[TAG]"):].strip()
 
             result.append({
@@ -92,5 +92,9 @@ def get_tags(user_id):
 
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host="0.0.0.0", port=port)
+    port = int(os.environ.get("PORT", "10000"))
+    print(f"Starting Flask on 0.0.0.0:{port}", flush=True)
+    app.run(
+        host="0.0.0.0",
+        port=port
+    )
